@@ -1,0 +1,46 @@
+version: '2'
+
+services:
+  db:
+    image: mariadb:latest
+    environment:
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - backend
+    restart: always
+
+  wordpress:
+    image: wordpress:latest
+    environment:
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_USER=${DB_USER}
+      - WORDPRESS_DB_PASSWORD=${DB_PASS}
+      - WORDPRESS_DB_NAME=${DB_NAME}
+    volumes:
+      - ./${VHOST}/www:/var/www/html
+    networks:
+      - traefik
+      - backend
+    depends_on:
+      - db
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=${VHOST}"
+      - "traefik.frontend.rule=Host:${VHOST}"
+      - "traefik.docker.network=traefik"
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  traefik:
+    external:
+      name: traefik
+  backend:
